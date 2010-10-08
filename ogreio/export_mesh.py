@@ -12,6 +12,7 @@ import struct
 import os
 import time
 import traceback
+import subprocess
 
 import bpy
 import bpyml
@@ -151,8 +152,8 @@ class ExportOGREMesh(bpy.types.Operator):
 
             # Create the submesh node
             submesh_attributes = {
-                "usesharedvertices" : "false", 
-                "use32bitindexes" : "false", 
+                "usesharedvertices" : "false",
+                "use32bitindexes" : "false",
                 "operationtype" : "triangle_list"
             }
 
@@ -178,6 +179,20 @@ class ExportOGREMesh(bpy.types.Operator):
 
         # Close the file:
         writer.close()
+
+        # Convert to .mesh
+        xml_to_mesh = self.properties.xml_to_mesh
+        try:
+            self.logfile.write("\nStarting .mesh conversion\nOgreXmlConverter Path: {0}\n".format(self.properties.xml_to_mesh))
+            if not os.path.exists(xml_to_mesh):
+                self.logfile.write("Error: Path does not exist")
+            elif not [entry for entry in os.listdir(xml_to_mesh) if entry.startswith("OgreXmlConverter")]:
+                self.logfile.write("Error: OgreXmlConverter not found")
+            else:
+                xml_to_mesh = os.path.join(xml_to_mesh,"OgreXmlConverter")
+                p = subprocess.Popen([xml_to_mesh,filename],stdout = self.logfile,stderr = self.logfile)
+        except:
+            traceback.print_exc(file=self.logfile)
 
 def menu_func(self, context):
     self.layout.operator(ExportOGREMesh.bl_idname, text="OGRE XML Mesh (.mesh.xml)")
